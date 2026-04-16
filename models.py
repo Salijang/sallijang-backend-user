@@ -2,7 +2,13 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, E
 from sqlalchemy.orm import relationship
 from database import Base
 import enum
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+KST = timezone(timedelta(hours=9))
+
+def kst_now() -> datetime:
+    """현재 한국 표준시(KST, UTC+9)를 반환합니다."""
+    return datetime.now(KST).replace(tzinfo=None)
 
 class RoleEnum(str, enum.Enum):
     buyer = "buyer"
@@ -17,7 +23,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     role = Column(Enum(RoleEnum), default=RoleEnum.buyer, nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     wishlists = relationship("Wishlist", back_populates="user")
 
@@ -27,6 +33,6 @@ class Wishlist(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     store_id = Column(Integer, nullable=False) # References stores table in product_schema
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=kst_now)
 
     user = relationship("User", back_populates="wishlists")
