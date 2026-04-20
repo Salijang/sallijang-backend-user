@@ -30,13 +30,15 @@ async def add_wishlist(data: schemas.WishlistCreate, db: AsyncSession = Depends(
 
 
 @router.get("/", response_model=List[schemas.WishlistResponse])
-async def list_wishlists(user_id: int, db: AsyncSession = Depends(get_db)):
-    """사용자의 찜 목록을 최신순으로 반환합니다."""
-    result = await db.execute(
-        select(models.Wishlist)
-        .filter(models.Wishlist.user_id == user_id)
-        .order_by(models.Wishlist.created_at.desc())
-    )
+async def list_wishlists(user_id: int | None = None, store_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    """찜 목록 조회. user_id(사용자별) 또는 store_id(가게별)로 필터링합니다."""
+    query = select(models.Wishlist)
+    if user_id is not None:
+        query = query.filter(models.Wishlist.user_id == user_id)
+    if store_id is not None:
+        query = query.filter(models.Wishlist.store_id == store_id)
+    query = query.order_by(models.Wishlist.created_at.desc())
+    result = await db.execute(query)
     return result.scalars().all()
 
 
