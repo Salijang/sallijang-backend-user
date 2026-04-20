@@ -1,15 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base
+from database import engine
 import contextlib
-from routers import auth
+from routers import auth, wishlist
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables on startup (only for dev, use Alembic for prod)
-    async with engine.begin() as conn:
-        # Schema is already specified in Base.metadata
-        await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
@@ -29,6 +25,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(wishlist.router)
 
 @app.get("/")
 async def root():

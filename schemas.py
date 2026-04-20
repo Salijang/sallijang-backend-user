@@ -44,3 +44,18 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+
+class WishlistCreate(BaseModel):
+    user_id: int
+    store_id: int
+
+
+class WishlistResponse(BaseModel):
+    id: int
+    user_id: int
+    store_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
