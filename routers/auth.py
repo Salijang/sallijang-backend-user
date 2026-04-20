@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 @router.post("/signup", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
+    """새 사용자를 등록합니다. 이메일 중복 시 400 에러를 반환합니다."""
     result = await db.execute(select(models.User).filter(models.User.email == user.email))
     db_user = result.scalars().first()
     if db_user:
@@ -32,6 +33,7 @@ async def signup(user: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    """이메일/비밀번호로 로그인하고 JWT 액세스 토큰을 반환합니다."""
     result = await db.execute(select(models.User).filter(models.User.email == form_data.username))
     user = result.scalars().first()
     
