@@ -1,4 +1,4 @@
-name: CI to AWS ECR (Access Key)
+name: CI/CD Pipeline for User Service
 
 on:
   push:
@@ -53,3 +53,28 @@ jobs:
           # 푸시
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # 5. 매니페스트 레포지토리 체크아웃 (Personal Access Token 필요)
+      - name: Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          # Organization 이름인 Salijang을 사용합니다.
+          repository: Salijang/sallijang-manifest
+          token: ${{ secrets.GH_PAT }} # GitHub Settings에서 생성한 PAT를 Secrets에 등록해야 함
+          path: manifest
+
+      # 6. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시
+      - name: Update Kubernetes resources
+        run: |
+          cd manifest/base/user # user 서비스 폴더로 이동
+          
+          # kustomization.yaml의 newTag를 현재 빌드된 이미지 태그(github.sha)로 치환
+          # 이 작업이 완료되어야 ArgoCD가 변경 사항을 감지합니다.
+          sed -i "s/newTag: .*/newTag: ${{ github.sha }}/g" kustomization.yaml
+          
+          # Git Push 설정
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git add .
+          git commit -m "chore(user): update image tag to ${{ github.sha }} [skip ci]"
+          git push origin main
