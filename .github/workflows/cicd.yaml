@@ -63,26 +63,25 @@ jobs:
           token: ${{ secrets.GHA_TOKEN }} # GitHub Settings에서 생성한 PAT를 Secrets에 등록해야 함
           path: manifest
 
-      # 6. Kustomize 이미지 태그 업데이트 (완전 동적 버전)
+      # 6. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시 (하드코딩 없는 동적 버전)
       - name: Update Kubernetes resources
         run: |
-          cd manifest/base/user
+          cd manifest/base/user # user 서비스 폴더로 이동
           
-          # 변수 설명:
-          # 1. ${{ steps.login-ecr.outputs.registry }}: 로그인 단계에서 받아온 '계정ID.dkr.ecr.리전.amazonaws.com'
-          # 2. ${{ github.event.repository.name }}: 현재 실행 중인 레포지토리 이름 (sallijang-backend-user)
+          # AWS 로그인 단계에서 동적으로 생성된 ECR 주소를 변수에 담습니다.
+          # 예: <계정ID>.dkr.ecr.<리전>.amazonaws.com/sallijang-backend-user
+          REAL_IMAGE_URL="${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}"
           
-          FULL_IMAGE_NAME="${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}"
+          # kustomize edit 명령어를 사용하여 [별칭]을 [실제주소:커밋해시]로 갈아끼웁니다.
+          # 이 방식은 YAML 인덴트를 깨뜨리지 않고 공백 문제를 일으키지 않아 안전합니다.
+          kustomize edit set image user-image=$REAL_IMAGE_URL:${{ github.sha }}
           
-          # kustomize edit set image [기존이미지]=[새이미지]:[태그]
-          # 기존 이미지 이름과 새 이미지 이름이 같으므로 아래와 같이 작성합니다.
-          kustomize edit set image $FULL_IMAGE_NAME=$FULL_IMAGE_NAME:${{ github.sha }}
-          
-          # 결과 확인
+          # 변경된 kustomization.yaml 내용 확인 (디버깅용)
           cat kustomization.yaml
           
+          # Git Push 설정
           git config --global user.email "github-actions@github.com"
           git config --global user.name "github-actions"
           git add kustomization.yaml
-          git commit -m "chore(user): deploy image tag ${{ github.sha }} [skip ci]"
+          git commit -m "chore(user): update image tag to ${{ github.sha }} [skip ci]"
           git push origin main
