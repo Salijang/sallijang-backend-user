@@ -70,7 +70,7 @@ jobs:
           
           # kustomization.yaml의 newTag를 현재 빌드된 이미지 태그(github.sha)로 치환
           # 이 작업이 완료되어야 ArgoCD가 변경 사항을 감지합니다.
-          sed -i "s/newTag: .*/newTag: ${{ github.sha }}/g" kustomization.yaml
+          sed -i "s|newTag:.*|newTag: ${{ github.sha }}|g" kustomization.yaml
           
           # Git Push 설정
           git config --global user.email "github-actions@github.com"
