@@ -60,7 +60,7 @@ jobs:
         with:
           # Organization 이름인 Salijang을 사용합니다.
           repository: Salijang/sallijang-manifest
-          token: ${{ secrets.GH_PAT }} # GitHub Settings에서 생성한 PAT를 Secrets에 등록해야 함
+          token: ${{ secrets.GHA_TOKEN }} # GitHub Settings에서 생성한 PAT를 Secrets에 등록해야 함
           path: manifest
 
       # 6. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시
