@@ -3,7 +3,7 @@ import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from alembic import context
 
 from database import Base
@@ -53,6 +53,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
+    connection.execute(text("CREATE SCHEMA IF NOT EXISTS user_schema"))
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
