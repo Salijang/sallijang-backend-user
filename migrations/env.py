@@ -18,10 +18,17 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://admin:password@localhost:5432/salijang_db"
+    import boto3
+    host = os.environ.get("DB_HOST", "localhost")
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ.get("DB_USER", "adminuser")
+    db = os.environ.get("DB_NAME", "pickupdb")
+    region = os.environ.get("AWS_REGION", "ap-northeast-2")
+
+    token = boto3.client("rds", region_name=region).generate_db_auth_token(
+        DBHostname=host, Port=int(port), DBUsername=user
     )
+    return f"postgresql+asyncpg://{user}:{token}@{host}:{port}/{db}"
 
 
 def include_name(name, type_, parent_names):

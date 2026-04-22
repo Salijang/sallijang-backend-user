@@ -63,7 +63,11 @@ jobs:
           token: ${{ secrets.GHA_TOKEN }} # GitHub Settings에서 생성한 PAT를 Secrets에 등록해야 함
           path: manifest
 
-      # 6. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시 (하드코딩 없는 동적 버전)
+      # 6. Kustomize 설치
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      # 7. Kustomize를 사용하여 이미지 태그 업데이트 및 푸시 (하드코딩 없는 동적 버전)
       - name: Update Kubernetes resources
         run: |
           cd manifest/base/user # user 서비스 폴더로 이동
@@ -83,5 +87,5 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "github-actions"
           git add kustomization.yaml
-          git commit -m "chore(user): update image tag to ${{ github.sha }} [skip ci]"
+          git diff --cached --quiet || git commit -m "chore(user): update image tag to ${{ github.sha }} [skip ci]"
           git push origin main
