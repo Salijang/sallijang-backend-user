@@ -19,6 +19,7 @@ target_metadata = Base.metadata
 
 def get_url() -> str:
     import boto3
+    from urllib.parse import quote_plus
     host = os.environ.get("DB_HOST", "localhost")
     port = os.environ.get("DB_PORT", "5432")
     user = os.environ.get("DB_USER", "adminuser")
@@ -28,7 +29,7 @@ def get_url() -> str:
     token = boto3.client("rds", region_name=region).generate_db_auth_token(
         DBHostname=host, Port=int(port), DBUsername=user
     )
-    return f"postgresql+asyncpg://{user}:{token}@{host}:{port}/{db}"
+    return f"postgresql+asyncpg://{user}:{quote_plus(token)}@{host}:{port}/{db}"
 
 
 def include_name(name, type_, parent_names):
