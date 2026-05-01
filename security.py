@@ -4,7 +4,9 @@ import jwt
 import bcrypt
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_key_for_sallijang_app")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

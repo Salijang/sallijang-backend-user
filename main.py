@@ -18,7 +18,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 로컬 개발용이므로 모든 도메인 허용
+    allow_origins=["https://app.sallijang.shop"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
