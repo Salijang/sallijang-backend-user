@@ -47,7 +47,6 @@ class TokenData(BaseModel):
 
 
 class WishlistCreate(BaseModel):
-    user_id: int
     store_id: int
 
 
