@@ -3,7 +3,7 @@ import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from alembic import context
 
 from database import Base
@@ -18,10 +18,20 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    return os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://admin:password@localhost:5432/salijang_db"
+    from urllib.parse import quote_plus
+    host = os.environ.get("DB_HOST", "localhost")
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ.get("DB_USER", "adminuser")
+    db = os.environ.get("DB_NAME", "pickupdb")
+    password = os.environ.get("DB_PASSWORD", "")
+    if password:
+        return f"postgresql+asyncpg://{user}:{quote_plus(password)}@{host}:{port}/{db}"
+    import boto3
+    region = os.environ.get("AWS_REGION", "ap-northeast-2")
+    token = boto3.client("rds", region_name=region).generate_db_auth_token(
+        DBHostname=host, Port=int(port), DBUsername=user
     )
+    return f"postgresql+asyncpg://{user}:{quote_plus(token)}@{host}:{port}/{db}"
 
 
 def include_name(name, type_, parent_names):
@@ -45,6 +55,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
+    connection.execute(text("CREATE SCHEMA IF NOT EXISTS user_schema"))
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
@@ -57,8 +68,13 @@ def do_run_migrations(connection):
 
 
 async def run_migrations_online() -> None:
-    connectable = create_async_engine(get_url(), poolclass=pool.NullPool)
-    async with connectable.connect() as connection:
+    connect_args = {} if os.environ.get("DB_PASSWORD") else {"ssl": "require"}
+    connectable = create_async_engine(
+        get_url(),
+        poolclass=pool.NullPool,
+        connect_args=connect_args,
+    )
+    async with connectable.begin() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
 

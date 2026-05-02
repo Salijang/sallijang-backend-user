@@ -4,7 +4,9 @@ import jwt
 import bcrypt
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_key_for_sallijang_app")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -25,7 +27,6 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """JWT 액세스 토큰을 생성합니다. expires_delta 미지정 시 15분 유효."""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
     to_encode.update({"exp": expire})
