@@ -1,0 +1,94 @@
+name: Trivy Image Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - dev_yji
+    paths:
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'lambda/**'
+      - '.github/workflows/trivy-image-scan.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'requirements.txt'
+      - 'lambda/**'
+      - '.github/workflows/trivy-image-scan.yml'
+
+jobs:
+  trivy-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Slack webhook secret
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is missing"
+            exit 1
+          fi
+          echo "SLACK_WEBHOOK_URL exists"
+
+      - name: Build Docker image
+        run: |
+          docker build -t sallijang-backend-user:latest .
+
+      - name: Run Trivy Image scan
+        id: trivy_scan
+        uses: aquasecurity/trivy-action@v0.20.0
+        continue-on-error: true
+        with:
+          image-ref: sallijang-backend-user:latest
+          format: table
+          output: trivy-image-results.txt
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+
+      - name: Print Trivy result
+        if: always()
+        run: |
+          if [ -f trivy-image-results.txt ]; then
+            cat trivy-image-results.txt
+          else
+            echo "trivy-image-results.txt file was not created."
+          fi
+
+      - name: Send Slack alert on Trivy failure
+        if: steps.trivy_scan.outcome == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ISSUE="HIGH/CRITICAL 이미지 보안 이슈가 발견되었습니다."
+
+          if [ -f trivy-image-results.txt ]; then
+            FOUND_ISSUE=$(grep -m 1 "HIGH" trivy-image-results.txt || true)
+
+            if [ -z "$FOUND_ISSUE" ]; then
+              FOUND_ISSUE=$(grep -m 1 "CRITICAL" trivy-image-results.txt || true)
+            fi
+
+            if [ -n "$FOUND_ISSUE" ]; then
+              ISSUE="$FOUND_ISSUE"
+            fi
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"text\":\"🛡️ *Trivy Image Security Alert*\n<@U0A5ZUZRT7A>\nRepository: sallijang-*backend-user*\n${ISSUE}\n확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+          }" \
+          "$SLACK_WEBHOOK_URL"
+
+      - name: Fail pipeline if Trivy found issues
+        if: steps.trivy_scan.outcome == 'failure'
+        run: |
+          echo "Trivy found HIGH/CRITICAL image security issues. Failing pipeline."
+          exit 1
