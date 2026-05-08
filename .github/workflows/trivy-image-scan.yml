@@ -81,11 +81,18 @@ jobs:
             fi
           fi
 
-          curl -X POST -H 'Content-type: application/json' \
-          --data "{
-            \"text\":\"🛡️ *Trivy Image Security Alert*\n<@U0A5ZUZRT7A>\nRepository: sallijang-*backend-user*\n${ISSUE}\n확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
-          }" \
-          "$SLACK_WEBHOOK_URL"
+          PAYLOAD=$(jq -n \
+            --arg text "🛡️ *Trivy Image Security Alert*
+          <@U0A5ZUZRT7A>
+          Repository: sallijang-*backend-user*
+          ${ISSUE}
+          확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            '{text: $text}')
+
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            --data "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"
 
       - name: Fail pipeline if Trivy found issues
         if: steps.trivy_scan.outcome == 'failure'
