@@ -63,7 +63,7 @@ async def login(
         value=access_token,
         httponly=True,
         secure=True,
-        samesite="strict",
+        samesite="lax",
         domain=".sallijang.shop",
         max_age=COOKIE_MAX_AGE,
         path="/",
