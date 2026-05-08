@@ -35,7 +35,14 @@ jobs:
             echo "SLACK_WEBHOOK_URL is missing"
             exit 1
           fi
-          echo "SLACK_WEBHOOK_URL exists"
+
+          if [[ "$SLACK_WEBHOOK_URL" != https://hooks.slack.com/services/* ]]; then
+            echo "SLACK_WEBHOOK_URL format is invalid"
+            echo "It must start with https://hooks.slack.com/services/"
+            exit 1
+          fi
+
+          echo "SLACK_WEBHOOK_URL format is valid"
 
       - name: Build Docker image
         run: |
@@ -81,18 +88,18 @@ jobs:
             fi
           fi
 
-          PAYLOAD=$(jq -n \
+          jq -n \
             --arg text "🛡️ *Trivy Image Security Alert*
-          <@U0A5ZUZRT7A>
-          Repository: sallijang-*backend-user*
-          ${ISSUE}
-          확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            '{text: $text}')
-
-          curl -X POST \
-            -H 'Content-type: application/json' \
-            --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+              <@U0A5ZUZRT7A>
+              Repository: sallijang-*backend-user*
+              ${ISSUE}
+              확인: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                          '{text: $text}' > slack-payload.json
+              
+                        curl -X POST \
+                          -H 'Content-type: application/json' \
+                          --data @slack-payload.json \
+                          "$SLACK_WEBHOOK_URL"
 
       - name: Fail pipeline if Trivy found issues
         if: steps.trivy_scan.outcome == 'failure'
